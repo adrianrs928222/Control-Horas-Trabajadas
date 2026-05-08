@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
 import {
-  GoogleAuthProvider,
-  signInWithPopup,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
 } from "firebase/auth";
@@ -20,6 +20,9 @@ import { auth, db } from "./firebase";
 function App() {
   const [user, setUser] = useState(null);
 
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
   const [empresa, setEmpresa] = useState("");
   const [inicio, setInicio] = useState("");
   const [fin, setFin] = useState("");
@@ -28,42 +31,52 @@ function App() {
   const [entries, setEntries] = useState([]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (currentUser) => {
-        setUser(currentUser);
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
 
-        if (currentUser) {
-          const ref = collection(
-            db,
-            "users",
-            currentUser.uid,
-            "entries"
-          );
+      if (currentUser) {
+        const ref = collection(
+          db,
+          "users",
+          currentUser.uid,
+          "entries"
+        );
 
-          onSnapshot(ref, (snapshot) => {
-            const data = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            }));
+        onSnapshot(ref, (snapshot) => {
+          const data = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
 
-            setEntries(data);
-          });
-        }
+          setEntries(data);
+        });
       }
-    );
+    });
 
     return () => unsubscribe();
   }, []);
 
-  const loginGoogle = async () => {
+  const register = async () => {
     try {
-      const provider = new GoogleAuthProvider();
-
-      await signInWithPopup(auth, provider);
+      await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
     } catch (error) {
-      console.error(error);
-      alert("Error al iniciar sesión");
+      alert(error.message);
+    }
+  };
+
+  const login = async () => {
+    try {
+      await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
+    } catch (error) {
+      alert(error.message);
     }
   };
 
@@ -73,7 +86,6 @@ function App() {
 
   const calcularHoras = (inicio, fin) => {
     const start = new Date(`2025-01-01T${inicio}`);
-
     const end = new Date(`2025-01-01T${fin}`);
 
     return (end - start) / (1000 * 60 * 60);
@@ -86,52 +98,42 @@ function App() {
     }
 
     const horas = calcularHoras(inicio, fin);
-
     const total = horas * parseFloat(precio);
 
-    try {
-      await addDoc(
-        collection(
-          db,
-          "users",
-          user.uid,
-          "entries"
-        ),
-        {
-          empresa,
-          inicio,
-          fin,
-          precio,
-          horas,
-          total,
-          createdAt: Date.now(),
-        }
-      );
+    await addDoc(
+      collection(
+        db,
+        "users",
+        user.uid,
+        "entries"
+      ),
+      {
+        empresa,
+        inicio,
+        fin,
+        precio,
+        horas,
+        total,
+        createdAt: Date.now(),
+      }
+    );
 
-      setEmpresa("");
-      setInicio("");
-      setFin("");
-      setPrecio("");
-    } catch (error) {
-      console.error(error);
-      alert("Error guardando datos");
-    }
+    setEmpresa("");
+    setInicio("");
+    setFin("");
+    setPrecio("");
   };
 
   const eliminarRegistro = async (id) => {
-    try {
-      await deleteDoc(
-        doc(
-          db,
-          "users",
-          user.uid,
-          "entries",
-          id
-        )
-      );
-    } catch (error) {
-      console.error(error);
-    }
+    await deleteDoc(
+      doc(
+        db,
+        "users",
+        user.uid,
+        "entries",
+        id
+      )
+    );
   };
 
   if (!user) {
@@ -139,8 +141,30 @@ function App() {
       <div className="login">
         <h1>Control de Horas</h1>
 
-        <button onClick={loginGoogle}>
-          Iniciar sesión con Google
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={(e) =>
+            setEmail(e.target.value)
+          }
+        />
+
+        <input
+          type="password"
+          placeholder="Contraseña"
+          value={password}
+          onChange={(e) =>
+            setPassword(e.target.value)
+          }
+        />
+
+        <button onClick={login}>
+          Iniciar Sesión
+        </button>
+
+        <button onClick={register}>
+          Registrarse
         </button>
       </div>
     );
@@ -150,9 +174,7 @@ function App() {
     <div className="container">
       <div className="topbar">
         <div>
-          <h2>{user.displayName}</h2>
-
-          <p>{user.email}</p>
+          <h2>{user.email}</h2>
         </div>
 
         <button onClick={logout}>
