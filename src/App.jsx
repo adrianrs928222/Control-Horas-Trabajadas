@@ -31,27 +31,32 @@ function App() {
   const [entries, setEntries] = useState([]);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (currentUser) => {
+        setUser(currentUser);
 
-      if (currentUser) {
-        const ref = collection(
-          db,
-          "users",
-          currentUser.uid,
-          "entries"
-        );
+        if (currentUser) {
+          const ref = collection(
+            db,
+            "users",
+            currentUser.uid,
+            "entries"
+          );
 
-        onSnapshot(ref, (snapshot) => {
-          const data = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
+          onSnapshot(ref, (snapshot) => {
+            const data = snapshot.docs.map(
+              (doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })
+            );
 
-          setEntries(data);
-        });
+            setEntries(data);
+          });
+        }
       }
-    });
+    );
 
     return () => unsubscribe();
   }, []);
@@ -85,20 +90,37 @@ function App() {
   };
 
   const calcularHoras = (inicio, fin) => {
-    const start = new Date(`2025-01-01T${inicio}`);
-    const end = new Date(`2025-01-01T${fin}`);
+    const start = new Date(
+      `2025-01-01T${inicio}`
+    );
 
-    return (end - start) / (1000 * 60 * 60);
+    const end = new Date(
+      `2025-01-01T${fin}`
+    );
+
+    return (
+      (end - start) / (1000 * 60 * 60)
+    );
   };
 
   const agregarRegistro = async () => {
-    if (!empresa || !inicio || !fin || !precio) {
+    if (
+      !empresa ||
+      !inicio ||
+      !fin ||
+      !precio
+    ) {
       alert("Completa todos los campos");
       return;
     }
 
-    const horas = calcularHoras(inicio, fin);
-    const total = horas * parseFloat(precio);
+    const horas = calcularHoras(
+      inicio,
+      fin
+    );
+
+    const total =
+      horas * parseFloat(precio);
 
     await addDoc(
       collection(
@@ -155,12 +177,14 @@ function App() {
           placeholder="Contraseña"
           value={password}
           onChange={(e) =>
-            setPassword(e.target.value)
+            setPassword(
+              e.target.value
+            )
           }
         />
 
         <button onClick={login}>
-          Iniciar Sesión
+          Iniciar sesión
         </button>
 
         <button onClick={register}>
@@ -173,9 +197,7 @@ function App() {
   return (
     <div className="container">
       <div className="topbar">
-        <div>
-          <h2>{user.email}</h2>
-        </div>
+        <h2>{user.email}</h2>
 
         <button onClick={logout}>
           Cerrar sesión
@@ -219,7 +241,9 @@ function App() {
           }
         />
 
-        <button onClick={agregarRegistro}>
+        <button
+          onClick={agregarRegistro}
+        >
           Guardar
         </button>
       </div>
@@ -233,22 +257,29 @@ function App() {
             <h3>{entry.empresa}</h3>
 
             <p>
-              {entry.inicio} - {entry.fin}
+              {entry.inicio} -{" "}
+              {entry.fin}
             </p>
 
             <p>
               Horas:{" "}
-              {Number(entry.horas).toFixed(2)}
+              {Number(
+                entry.horas
+              ).toFixed(2)}
             </p>
 
             <p>
               Total: €
-              {Number(entry.total).toFixed(2)}
+              {Number(
+                entry.total
+              ).toFixed(2)}
             </p>
 
             <button
               onClick={() =>
-                eliminarRegistro(entry.id)
+                eliminarRegistro(
+                  entry.id
+                )
               }
             >
               Eliminar
